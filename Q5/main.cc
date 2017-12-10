@@ -20,17 +20,20 @@ public:
     virtual ~Traversal() {}
 };
 
-class Plus: public Expression {
+template <typename ExprClass>
+class TraverseableExpression: public Expression {
+    int doTraverse(Traversal &trav) override {
+        return trav.traverse(*static_cast<ExprClass*>(this));
+    }
+};
+
+class Plus: public TraverseableExpression<Plus> {
     Expression *left, *right;
 public:
     Plus(Expression *left, Expression *right): left{left}, right{right} {}
     ~Plus() { delete left; delete right; }
     Expression *getLeft() { return left; }
     Expression *getRight() { return right; }
-
-    int doTraverse(Traversal &trav) override {
-        return trav.traverse(*this);
-    }
 };
 
 class Variable: public Expression {
