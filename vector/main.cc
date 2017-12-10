@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <cstring>
 
 template<typename T>
 void uninitialized_move_or_copy(T *to, T *from, T *end) {
@@ -14,15 +15,21 @@ void uninitialized_move_or_copy(T *to, T *from, T *end) {
 }
 
 template<typename T>
-void uninitialized_copy(T *to, const T *from, const T *end) {
+void uninitialized_copy(std::enable_if_t<!std::is_pod<T>::value, T> *to, const T *from, const T *end) {
     while (from != end) {
         new (to) T{*from};
         ++from; ++to;
     }
-    std::cout << "uninit copy called\n";
+    std::cout << "uninit copy non pod called\n";
 }
-
-// TODO memcpy if pod
+//TODO pod_v
+template<typename T>
+void uninitialized_copy(std::enable_if_t<std::is_pod<T>::value, T> *to, const T *from, const T *end) {
+    memcpy(static_cast<void *>(to), 
+        static_cast<const void *>(from), 
+        sizeof(T) * (end-from));
+    std::cout << "uninit copy pod called\n";
+}
 
 template<typename T, typename Alloc = std::allocator<T>>
 class vector {
@@ -101,9 +108,14 @@ int main() {
     vector<C, MyAllocator<C>> v;
     v.push_back(C{5});
     v.push_back(C{7});
-    v.pop_back();
-
     vector<C, MyAllocator<C>> v2 = v;
-
+    v.pop_back();
     std::cout << v[0].a << '\n';
+
+    vector<int, MyAllocator<int>> v3;
+    v3.push_back(5);
+    v3.push_back(7);
+    vector<int, MyAllocator<int>> v4 = v3;
+    v3.pop_back();
+    std::cout << v4[0] << std::endl;
 }
