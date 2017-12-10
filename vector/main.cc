@@ -1,3 +1,4 @@
+//g++ main.cc -o main -Wall -std=c++14 -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -g && ./main
 #include <iostream>
 #include <vector>
 #include <cstring>
@@ -22,7 +23,7 @@ void uninitialized_copy(std::enable_if_t<!std::is_pod<T>::value, T> *to, const T
     }
     std::cout << "uninit copy non pod called\n";
 }
-//TODO pod_v
+
 template<typename T>
 void uninitialized_copy(std::enable_if_t<std::is_pod<T>::value, T> *to, const T *from, const T *end) {
     memcpy(static_cast<void *>(to), 
