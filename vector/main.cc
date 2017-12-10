@@ -13,6 +13,17 @@ void uninitialized_move_or_copy(T *to, T *from, T *end) {
     }
 }
 
+template<typename T>
+void uninitialized_copy(T *to, const T *from, const T *end) {
+    while (from != end) {
+        new (to) T{*from};
+        ++from; ++to;
+    }
+    std::cout << "uninit copy called\n";
+}
+
+// TODO memcpy if pod
+
 template<typename T, typename Alloc = std::allocator<T>>
 class vector {
     struct vector_base: Alloc {
@@ -24,7 +35,9 @@ class vector {
 
         vector_base(size_t cap): cap{cap == 0? 1: cap}, 
             arr{allocate(this->cap)} {}
-        vector_base(const vector_base &o) = delete;
+        vector_base(const vector_base &o): vector_base{o.cap} {
+            uninitialized_copy(arr, o.arr, o.arr+o.cap);
+        }
         vector_base(vector_base &&o): cap{o.cap}, arr{o.arr} { o.cap = 0; o.arr = nullptr; }
         ~vector_base() { deallocate(arr, cap); cap = 0; }
         vector_base &operator=(vector_base o) { std::swap(cap, o.cap); std::swap(arr, o.arr); return *this; }
@@ -89,6 +102,8 @@ int main() {
     v.push_back(C{5});
     v.push_back(C{7});
     v.pop_back();
+
+    vector<C, MyAllocator<C>> v2 = v;
 
     std::cout << v[0].a << '\n';
 }
