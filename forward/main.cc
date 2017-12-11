@@ -24,5 +24,7 @@ int main() {
     int b = 1;
     test(myforward<int&>(a));
     test(myforward<int&&>(std::move(b)));
+    test(myforward<int&&>(a));
+    test(myforward<int&>(std::move(b)));
     test(myforward<int&&>(5));
 }
