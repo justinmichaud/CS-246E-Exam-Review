@@ -26,11 +26,6 @@ public:
     T &operator[](size_t i) { return *(data + i); }
 
     T *get() { return data; }
-
-    template <typename... Args>
-    static m_unique_ptr<T> make_unique(Args&... args) {
-        return m_unique_ptr<T> {new T{myforward<Args>(args)...}};
-    }
 };
 
 template <typename T>
@@ -50,16 +45,18 @@ public:
     T &operator[](size_t i) { return *(data + i); }
 
     T *get() { return data; }
-
-    template <typename... Args>
-    static m_unique_ptr<T[]> make_unique(Args&... args) {
-        return m_unique_ptr<T[]> {new T[sizeof...(Args)]{myforward<Args>(args)...}};
-    }
 };
 
 template <typename T, typename... Args>
-m_unique_ptr<T> m_make_unique(Args&... args) {
-    return m_unique_ptr<T>::make_unique(myforward<Args>(args)...);
+std::enable_if_t<!std::is_same<std::remove_extent_t<T>, T>::value, m_unique_ptr<T>>
+m_make_unique(Args&... args) {
+    return m_unique_ptr<T> {new std::remove_extent_t<T>[sizeof...(args)] {myforward<Args>(args)...}};
+}
+
+template <typename T, typename... Args>
+std::enable_if_t<std::is_same<std::remove_extent_t<T>, T>::value, m_unique_ptr<T>>
+m_make_unique(Args&... args) {
+    return m_unique_ptr<T> {new T {myforward<Args>(args)...}};
 }
 
 int main() {
