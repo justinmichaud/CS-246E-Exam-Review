@@ -2,20 +2,18 @@
 #include<cassert>
 #include<iomanip>
 
-template <typename... Args> using ignore_args = void;
-
-template<typename, typename T>
+template<typename T, typename>
 struct is_default_constructible_helper {
     const static bool value = false;
 };
 
 template<typename T>
-struct is_default_constructible_helper<std::enable_if_t<std::is_same<decltype(T{}), T>::value, ignore_args<>>, T> {
+struct is_default_constructible_helper<decltype(T{}), T> {
     const static bool value = true;
 };
 
 template<typename T>
-struct is_default_constructible: is_default_constructible_helper<ignore_args<>, T> {};
+struct is_default_constructible: is_default_constructible_helper<T, T> {};
 
 class N{
 public:
