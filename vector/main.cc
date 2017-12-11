@@ -36,44 +36,42 @@ template<typename T, typename Alloc = std::allocator<T>>
 class vector {
     struct vector_base: Alloc {
         size_t cap;
+        size_t n;
         T* arr;
 
         using Alloc::allocate;
         using Alloc::deallocate;
 
-        vector_base(size_t cap): cap{cap == 0? 1: cap}, 
+        vector_base(size_t cap): cap{cap == 0? 1: cap}, n{0},
             arr{allocate(this->cap)} {}
         vector_base(const vector_base &o): vector_base{o.cap} {
-            uninitialized_copy(arr, o.arr, o.arr+o.cap);
+            uninitialized_copy(arr, o.arr, o.arr+o.n);
+            n = o.n;
         }
-        vector_base(vector_base &&o): cap{o.cap}, arr{o.arr} { o.cap = 0; o.arr = nullptr; }
-        ~vector_base() { deallocate(arr, cap); cap = 0; }
-        vector_base &operator=(vector_base o) { std::swap(cap, o.cap); std::swap(arr, o.arr); return *this; }
+        vector_base(vector_base &&o): cap{o.cap}, n{o.n}, arr{o.arr} { o.cap = 0; o.n = 0; o.arr = nullptr; }
+        ~vector_base() { for (size_t i=0; i<n; ++i) arr[i].~T(); n = 0; deallocate(arr, cap); cap = 0; }
+        vector_base &operator=(vector_base o) { std::swap(cap, o.cap); std::swap(n, o.n); std::swap(arr, o.arr); return *this; }
     };
 
-    vector_base vb;
-    size_t n;
+    vector_base vb = vector_base{0};
 
     void increaseCap() {
-        if (n == vb.cap) {
-            vector_base vb2{vb.cap == 0? 1 : vb.cap*2};
-            uninitialized_move_or_copy(vb2.arr, vb.arr, vb.arr+vb.cap);
+        if (vb.n == vb.cap) {
+            vector_base vb2{vb.cap*2};
+            vb2.n = vb.n;
+            uninitialized_move_or_copy(vb2.arr, vb.arr, vb.arr+vb.n);
             std::swap(vb, vb2);
         }
     }
 public:
-    vector(): vb{0}, n{0} {}
-    vector(const vector& o): vb{o.vb}, n{o.n} {}
-    vector(vector &&o): vb{std::move(o.vb)}, n{o.n} { o.n = 0; }
-    vector<T> &operator=(vector o) { std::swap(vb, o.vb); std::swap(n, o.n); return *this; }
 
     void push_back(T t) {
         increaseCap();
-        new (vb.arr + (n++)) T{t};
+        new (vb.arr + (vb.n++)) T{t};
     }
 
     void pop_back() {
-        vb.arr[--n].~T();
+        vb.arr[--vb.n].~T();
     }
 
     T &operator[](size_t i) {
@@ -102,13 +100,17 @@ struct MyAllocator {
 class C {
 public:
     int a=0;
-    C(int a): a{a} {}
+    std::string *s;
+    C(int a): a{a}, s{new std::string{"hello"}} {}
+    C(const C &o): a{o.a}, s{new std::string{*o.s}} {}
+    ~C() { delete s; }
 };
 
 int main() {
     vector<C, MyAllocator<C>> v;
     v.push_back(C{5});
     v.push_back(C{7});
+    v.push_back(C{8});
     vector<C, MyAllocator<C>> v2 = v;
     v.pop_back();
     std::cout << v[0].a << '\n';
