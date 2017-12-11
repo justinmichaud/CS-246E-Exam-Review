@@ -3,10 +3,12 @@
 
 template<typename T> T&& myforward(std::remove_reference_t<T>& arg) {
     return static_cast<T&&>(arg);
+    std::cout << "lvalue forward\n";
 }
 
 template<typename T> T&& myforward(std::remove_reference_t<T>&& arg) {
     return static_cast<T&&>(arg);
+    std::cout << "rvalue forward\n";
 }
 
 template <typename T>
